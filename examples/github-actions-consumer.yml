@@ -1,0 +1,16 @@
+# Example: gate a GitHub Actions workflow on st_formatter formatting.
+# Copy this into your own .github/workflows/ (e.g. format-check.yml).
+name: Format check
+
+on: [push, pull_request]
+
+jobs:
+  st-format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install st-formatter
+      - run: st-formatter --check src/plc

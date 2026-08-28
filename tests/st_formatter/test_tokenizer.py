@@ -1,6 +1,6 @@
 import unittest
 
-from tools.st_formatter.tokenizer import TokenType, tokenize
+from st_formatter.tokenizer import TokenType, tokenize
 
 
 class TestTokenizer(unittest.TestCase):

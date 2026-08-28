@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "st-formatter"
+dynamic = ["version"]
+description = "clang-format-style formatter for IEC 61131-3 Structured Text (.st) and Bodas/CoDeSys 2.3 .EXP exports"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+authors = [
+    { name = "Idan Malka", email = "idanmalka2001@gmail.com" },
+]
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Gregos5/st_formatter"
+Repository = "https://github.com/Gregos5/st_formatter"
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.0"]
+dev = ["build", "twine"]
+
+[project.scripts]
+st-formatter = "st_formatter.cli:main"
+
+[tool.hatch.version]
+path = "src/st_formatter/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/st_formatter"]

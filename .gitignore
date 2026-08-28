@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+*.pyc
 
 # Environments
 .env
@@ -9,3 +10,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Build / packaging artifacts
+build/
+dist/
+*.egg-info/
+*.spec

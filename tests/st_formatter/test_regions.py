@@ -1,6 +1,6 @@
 import unittest
 
-from tools.st_formatter.regions import FileClass, detect
+from st_formatter.regions import FileClass, detect
 
 
 class TestRegions(unittest.TestCase):

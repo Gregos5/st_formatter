@@ -1,6 +1,6 @@
 import unittest
 
-from tools.st_formatter.align import apply
+from st_formatter.align import apply
 
 
 class TestAlign(unittest.TestCase):

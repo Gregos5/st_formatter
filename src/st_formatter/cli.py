@@ -1,6 +1,7 @@
 """CLI entry point for the ST formatter.
 
-    python -m tools.st_formatter <paths...> [options]
+    st-formatter <paths...> [options]
+    python -m st_formatter <paths...> [options]
 
 There is no implicit default path: callers must name the directory/files
 to format explicitly (e.g. `code`), so the tool stays safe to point at a
@@ -10,9 +11,12 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import fnmatch
 import sys
 from pathlib import Path
 
+from . import __version__
+from .config import resolve_config
 from .formatter import format_text
 
 EXIT_CLEAN = 0
@@ -21,13 +25,25 @@ EXIT_VALIDATION_FAILED = 2
 EXIT_FATAL = 3
 
 
-def _iter_exp_files(paths: list) -> list:
+def _is_excluded(path: Path, exclude_patterns: tuple) -> bool:
+    posix = path.as_posix()
+    return any(fnmatch.fnmatch(posix, pat) for pat in exclude_patterns)
+
+
+def _iter_source_files(paths: list, extensions: tuple, exclude_patterns: tuple, verbose: bool = False) -> list:
     files = []
     for raw in paths:
         p = Path(raw)
         if p.is_dir():
-            files.extend(sorted(f for f in p.rglob("*") if f.is_file() and f.suffix.lower() == ".exp"))
+            for f in sorted(p.rglob("*")):
+                if not f.is_file() or f.suffix.lower() not in extensions:
+                    continue
+                if _is_excluded(f, exclude_patterns):
+                    continue
+                files.append(f)
         elif p.is_file():
+            if verbose and p.suffix.lower() not in extensions:
+                print(f"note: {p} has an unrecognized extension, formatting it anyway (explicit file argument)")
             files.append(p)
         else:
             raise FileNotFoundError(f"no such file or directory: {raw}")
@@ -46,23 +62,44 @@ def _write(path: Path, text: str) -> None:
 
 def main(argv: list = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Basic clang-format-style formatter for IEC 61131-3 "
-                     "Structured Text .EXP files (Bodas/CoDeSys 2.3)."
+        description="clang-format-style formatter for IEC 61131-3 Structured "
+                     "Text (.st) and Bodas/CoDeSys 2.3 .EXP exports."
     )
-    parser.add_argument("paths", nargs="+", help="Files and/or directories to format (.EXP files only)")
+    parser.add_argument("paths", nargs="+", help="Files and/or directories to format (.st and .EXP by default)")
     parser.add_argument("--write", action="store_true", help="Apply changes in place (default: dry run)")
     parser.add_argument("--check", action="store_true", help="Explicit dry-run alias (default behavior)")
     parser.add_argument("--diff", action="store_true", help="Print a unified diff for each file that would change")
-    parser.add_argument("--indent-size", type=int, default=2)
-    parser.add_argument("--tab-width", type=int, default=4)
-    parser.add_argument("--no-align", action="store_true", help="Skip the := / => / comment alignment pass")
-    parser.add_argument("--no-indent", action="store_true", help="Skip the reindentation pass")
+    parser.add_argument("--config", metavar="PATH", help="Use this config file instead of auto-discovery")
+    parser.add_argument("--extensions", metavar="EXT,...", help="Comma-separated extensions to treat as ST source, "
+                                                                  "e.g. .st,.exp (default: .st,.exp)")
+    parser.add_argument("--indent-size", type=int, default=None)
+    parser.add_argument("--tab-width", type=int, default=None)
+    parser.add_argument("--no-align", action="store_true", default=None,
+                         help="Skip the := / => / comment alignment pass")
+    parser.add_argument("--no-indent", action="store_true", default=None, help="Skip the reindentation pass")
     parser.add_argument("--report", metavar="PATH", help="Write the full summary/diff/failure log to this file")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--version", action="version", version=f"st-formatter {__version__}")
     args = parser.parse_args(argv)
 
     try:
-        files = _iter_exp_files(args.paths)
+        config = resolve_config(
+            paths=args.paths,
+            explicit_config=args.config,
+            cli_overrides={
+                "indent_size": args.indent_size,
+                "tab_width": args.tab_width,
+                "do_indent": None if args.no_indent is None else not args.no_indent,
+                "do_align": None if args.no_align is None else not args.no_align,
+                "extensions": tuple(e.strip() for e in args.extensions.split(",")) if args.extensions else None,
+            },
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        print(f"error: invalid config: {exc}", file=sys.stderr)
+        return EXIT_FATAL
+
+    try:
+        files = _iter_source_files(args.paths, config.extensions, config.exclude, verbose=args.verbose)
     except FileNotFoundError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_FATAL
@@ -80,10 +117,10 @@ def main(argv: list = None) -> int:
 
         result = format_text(
             original,
-            indent_size=args.indent_size,
-            tab_width=args.tab_width,
-            do_indent=not args.no_indent,
-            do_align=not args.no_align,
+            indent_size=config.indent_size,
+            tab_width=config.tab_width,
+            do_indent=config.do_indent,
+            do_align=config.do_align,
         )
 
         if not result.ok:

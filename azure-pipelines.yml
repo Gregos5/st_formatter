@@ -1,0 +1,29 @@
+# CI for st_formatter itself: install and run the test suite across
+# platforms. Release/publish automation lives in GitHub Actions
+# (.github/workflows/release.yml) since PyPI Trusted Publishing is
+# GitHub-native. See examples/azure-pipelines-consumer.yml for how a
+# *consuming* project should call st-formatter from its own pipeline.
+trigger:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: $(imageName)
+
+strategy:
+  matrix:
+    linux:
+      imageName: "ubuntu-latest"
+    windows:
+      imageName: "windows-latest"
+    mac:
+      imageName: "macOS-latest"
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.11"
+  - script: pip install -e .
+    displayName: Install st_formatter (editable)
+  - script: python -m unittest discover -s tests -t . -v
+    displayName: Run test suite

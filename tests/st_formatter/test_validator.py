@@ -1,6 +1,6 @@
 import unittest
 
-from tools.st_formatter import validator
+from st_formatter import validator
 
 
 class TestValidator(unittest.TestCase):

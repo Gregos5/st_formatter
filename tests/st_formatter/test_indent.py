@@ -1,7 +1,7 @@
 import unittest
 
-from tools.st_formatter.indent import apply
-from tools.st_formatter.regions import detect
+from st_formatter.indent import apply
+from st_formatter.regions import detect
 
 
 def _fmt(text: str, indent_size: int = 2, tab_width: int = 4) -> str:

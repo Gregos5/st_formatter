@@ -1,0 +1,15 @@
+# Example st_formatter config. Place a copy of this file (named
+# `.stformat.toml`) at the root of your project, or add the equivalent
+# `[tool.st_formatter]` table to your project's own pyproject.toml.
+#
+# st-formatter looks for `.stformat.toml` first, then falls back to a
+# `[tool.st_formatter]` table in pyproject.toml, walking upward from the
+# file/directory you point it at. Any CLI flag you pass overrides these
+# values.
+
+indent_size = 2
+tab_width = 4
+indent = true
+align = true
+extensions = [".st", ".exp"]
+exclude = ["**/build/**", "**/_generated/**"]

@@ -1,6 +1,6 @@
 import unittest
 
-from tools.st_formatter.formatter import format_text
+from st_formatter.formatter import format_text
 
 FIXTURES = {
     "program_if_case": (

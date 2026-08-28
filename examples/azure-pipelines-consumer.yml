@@ -1,0 +1,10 @@
+# Example: gate an Azure DevOps pipeline on st_formatter formatting.
+# Copy the relevant steps into your own azure-pipelines.yml.
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.11"
+  - script: pip install st-formatter
+    displayName: Install st-formatter
+  - script: st-formatter --check src/plc
+    displayName: Check ST formatting (fails the build if any file is unformatted)
