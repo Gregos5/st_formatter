@@ -4,7 +4,7 @@ steps:
   - task: UsePythonVersion@0
     inputs:
       versionSpec: "3.11"
-  - script: pip install st-formatter
+  - script: pip install structured-text-formatter
     displayName: Install st-formatter
   - script: st-formatter --check src/plc
     displayName: Check ST formatting (fails the build if any file is unformatted)

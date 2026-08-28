@@ -20,7 +20,7 @@ formatting never risks changing program meaning.
 
 **PyPI** (needs Python 3.11+):
 ```
-pip install st-formatter
+pip install structured-text-formatter
 ```
 
 **Standalone executable** (no Python required): download the binary for your
@@ -103,7 +103,7 @@ directory-discovered files, never to an explicitly named file.
 
 **GitHub Actions** — see [examples/github-actions-consumer.yml](examples/github-actions-consumer.yml):
 ```yaml
-- run: pip install st-formatter
+- run: pip install structured-text-formatter
 - run: st-formatter --check src/plc
 ```
 
@@ -111,7 +111,7 @@ directory-discovered files, never to an explicitly named file.
 ```yaml
 - task: UsePythonVersion@0
   inputs: { versionSpec: '3.11' }
-- script: pip install st-formatter
+- script: pip install structured-text-formatter
 - script: st-formatter --check src/plc
 ```
 

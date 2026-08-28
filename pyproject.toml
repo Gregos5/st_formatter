@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "st-formatter"
+name = "structured-text-formatter"
 dynamic = ["version"]
 description = "clang-format-style formatter for IEC 61131-3 Structured Text (.st) and Bodas/CoDeSys 2.3 .EXP exports"
 readme = "README.md"
