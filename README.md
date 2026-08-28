@@ -3,7 +3,8 @@
 A clang-format-style formatter for IEC 61131-3 Structured Text: plain `.st`
 source and Bodas/CoDeSys 2.3 `.EXP` exports.
 
-It reindents block nesting, aligns runs of consecutive `:=`, `=>`, and
+It reindents block nesting, normalizes `name : type` declaration spacing to
+a single space on each side, aligns runs of consecutive `:=`, `=>`, and
 trailing comments, and never touches anything else. Every formatted file is
 checked against the original before being accepted:
 
@@ -136,7 +137,7 @@ src/st_formatter/
                     metadata format normally with zero special-casing
   blocks.py      — block-nesting walker (openers/closers, indent levels)
   indent.py      — reindentation pass driven by blocks.py
-  align.py       — aligns consecutive :=, =>, and trailing comments in contiguous runs
+  align.py       — normalizes VAR*/STRUCT declaration `:` spacing, and aligns consecutive :=, =>, and trailing comments in contiguous runs
   validator.py   — the compile-equivalence stand-in described above
   config.py      — .stformat.toml / pyproject.toml discovery, precedence, and merging
   cli.py         — the st-formatter command

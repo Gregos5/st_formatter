@@ -60,6 +60,46 @@ class TestAlign(unittest.TestCase):
         out = apply(text)
         self.assertIn("(* @PATH := 'x' *)\r\n", out)
 
+    def test_decl_colon_collapsed_to_single_space_in_var_block(self):
+        text = "VAR\r\n  x        : BOOL := FALSE;\r\nEND_VAR\r\n"
+        out = apply(text)
+        lines = out.splitlines()
+        self.assertEqual(lines[1], "  x : BOOL := FALSE;")
+
+    def test_decl_colon_collapsed_in_struct_block(self):
+        text = "STRUCT\r\n  x        : DWORD;\r\nEND_STRUCT\r\n"
+        out = apply(text)
+        lines = out.splitlines()
+        self.assertEqual(lines[1], "  x : DWORD;")
+
+    def test_case_label_colon_untouched(self):
+        text = "CASE y OF\r\n0        : Foo();\r\nEND_CASE\r\n"
+        out = apply(text)
+        lines = out.splitlines()
+        self.assertEqual(lines[1], "0        : Foo();")
+
+    def test_pou_header_colon_untouched(self):
+        text = "TYPE Foo_ts        :\r\nEND_TYPE\r\n"
+        out = apply(text)
+        lines = out.splitlines()
+        self.assertEqual(lines[0], "TYPE Foo_ts        :")
+
+    def test_decl_colon_normalized_then_assign_realigned(self):
+        text = (
+            "VAR\r\n"
+            "  flgOnceScreedValveLeft_b        : BOOL  := FALSE;\r\n"
+            "  flgOnceDrive_b        : BOOL            := FALSE;\r\n"
+            "END_VAR\r\n"
+        )
+        out = apply(text)
+        lines = out.splitlines()
+        # colon spacing collapsed to one space each side, and := realigned
+        # to a common column now that the colon padding is gone
+        self.assertEqual(lines[1], "  flgOnceScreedValveLeft_b : BOOL := FALSE;")
+        self.assertTrue(lines[2].startswith("  flgOnceDrive_b : BOOL"))
+        self.assertTrue(lines[2].endswith(":= FALSE;"))
+        self.assertEqual(lines[1].index(":="), lines[2].index(":="))
+
 
 if __name__ == "__main__":
     unittest.main()

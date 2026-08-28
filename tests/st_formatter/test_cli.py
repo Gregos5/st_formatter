@@ -64,19 +64,22 @@ class TestMain(unittest.TestCase):
     def test_check_mode_reports_would_change_without_writing(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "a.st"
-            target.write_text("PROGRAM Foo\r\nVAR\r\nx : BOOL;\r\nEND_VAR\r\nEND_PROGRAM\r\n")
-            before = target.read_text()
+            target.write_text("PROGRAM Foo\r\nVAR\r\nx : BOOL;\r\nEND_VAR\r\nEND_PROGRAM\r\n", newline="")
+            with target.open("r", newline="") as f:
+                before = f.read()
 
             code = main([str(target)])
 
             self.assertIn(code, (EXIT_CLEAN, EXIT_WOULD_CHANGE))
-            self.assertEqual(target.read_text(), before)
+            with target.open("r", newline="") as f:
+                after = f.read()
+            self.assertEqual(after, before)
 
     def test_st_and_exp_directory_are_both_formatted(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "a.st").write_text(_SIMPLE_PROGRAM)
-            (root / "b.EXP").write_text(_SIMPLE_PROGRAM)
+            (root / "a.st").write_text(_SIMPLE_PROGRAM, newline="")
+            (root / "b.EXP").write_text(_SIMPLE_PROGRAM, newline="")
 
             code = main(["--write", str(root)])
             self.assertEqual(code, EXIT_CLEAN)
