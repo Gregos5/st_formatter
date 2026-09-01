@@ -77,6 +77,10 @@ def main(argv: list = None) -> int:
     parser.add_argument("--no-align", action="store_true", default=None,
                          help="Skip the := / => / comment alignment pass")
     parser.add_argument("--no-indent", action="store_true", default=None, help="Skip the reindentation pass")
+    parser.add_argument("--no-align-conditions", action="store_true", default=None,
+                         help="Skip the IF/ELSIF/WHILE/UNTIL condition alignment pass")
+    parser.add_argument("--no-align-call-args", action="store_true", default=None,
+                         help="Skip the call-argument-list alignment pass")
     parser.add_argument("--report", metavar="PATH", help="Write the full summary/diff/failure log to this file")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("--version", action="version", version=f"st-formatter {__version__}")
@@ -91,6 +95,8 @@ def main(argv: list = None) -> int:
                 "tab_width": args.tab_width,
                 "do_indent": None if args.no_indent is None else not args.no_indent,
                 "do_align": None if args.no_align is None else not args.no_align,
+                "do_align_conditions": None if args.no_align_conditions is None else not args.no_align_conditions,
+                "do_align_call_args": None if args.no_align_call_args is None else not args.no_align_call_args,
                 "extensions": tuple(e.strip() for e in args.extensions.split(",")) if args.extensions else None,
             },
         )
@@ -121,6 +127,8 @@ def main(argv: list = None) -> int:
             tab_width=config.tab_width,
             do_indent=config.do_indent,
             do_align=config.do_align,
+            do_align_conditions=config.do_align_conditions,
+            do_align_call_args=config.do_align_call_args,
         )
 
         if not result.ok:

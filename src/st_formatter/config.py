@@ -15,7 +15,10 @@ from pathlib import Path
 
 _DEDICATED_FILENAME = ".stformat.toml"
 _PYPROJECT_FILENAME = "pyproject.toml"
-_KNOWN_KEYS = {"indent_size", "tab_width", "indent", "align", "extensions", "exclude"}
+_KNOWN_KEYS = {
+    "indent_size", "tab_width", "indent", "align",
+    "align_conditions", "align_call_args", "extensions", "exclude",
+}
 
 
 @dataclass
@@ -24,6 +27,8 @@ class Config:
     tab_width: int = 4
     do_indent: bool = True
     do_align: bool = True
+    do_align_conditions: bool = True
+    do_align_call_args: bool = True
     extensions: tuple = (".st", ".exp")
     exclude: tuple = field(default_factory=tuple)
 
@@ -46,6 +51,10 @@ def _table_to_overrides(table: dict) -> dict:
         overrides["do_indent"] = bool(table["indent"])
     if "align" in table:
         overrides["do_align"] = bool(table["align"])
+    if "align_conditions" in table:
+        overrides["do_align_conditions"] = bool(table["align_conditions"])
+    if "align_call_args" in table:
+        overrides["do_align_call_args"] = bool(table["align_call_args"])
     if "extensions" in table:
         overrides["extensions"] = _normalize_extensions(table["extensions"])
     if "exclude" in table:

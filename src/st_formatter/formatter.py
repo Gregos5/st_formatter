@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from . import align, indent, validator
+from . import align, callargs, conditions, indent, validator
 from .regions import FileClass, detect
 
 
@@ -22,6 +22,8 @@ def format_text(
     tab_width: int = 4,
     do_indent: bool = True,
     do_align: bool = True,
+    do_align_conditions: bool = True,
+    do_align_call_args: bool = True,
 ) -> FormatResult:
     regions = detect(original_text)
     if regions.file_class == FileClass.LIBRARY_MANIFEST:
@@ -30,6 +32,10 @@ def format_text(
     text = original_text
     if do_indent:
         text = indent.apply(text, regions, indent_size=indent_size, tab_width=tab_width)
+    if do_align_conditions:
+        text = conditions.apply(text)
+    if do_align_call_args:
+        text = callargs.apply(text, indent_size=indent_size)
     if do_align:
         text = align.apply(text)
 

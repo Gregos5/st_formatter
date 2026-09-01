@@ -5,8 +5,11 @@ source and Bodas/CoDeSys 2.3 `.EXP` exports.
 
 It reindents block nesting, normalizes `name : type` declaration spacing to
 a single space on each side, aligns runs of consecutive `:=`, `=>`, and
-trailing comments, and never touches anything else. Every formatted file is
-checked against the original before being accepted:
+trailing comments, aligns multi-line `IF`/`ELSIF`/`WHILE`/`UNTIL` conditions
+joined by `AND`/`OR`/`XOR` to a common column with single-space operator
+spacing, aligns multi-line call argument lists, and never touches anything
+else. Every formatted file is checked against the original before being
+accepted:
 
 - **Token-stream equality** — no code token was added, removed, reordered, or renamed.
 - **Nesting-tree equality** — block structure (`IF`/`CASE`/`FOR`/... nesting) is identical.
@@ -69,6 +72,8 @@ indent_size = 2
 tab_width = 4
 indent = true
 align = true
+align_conditions = true
+align_call_args = true
 extensions = [".st", ".exp"]
 exclude = ["**/build/**", "**/_generated/**"]
 ```
@@ -80,6 +85,8 @@ indent_size = 2
 tab_width = 4
 indent = true
 align = true
+align_conditions = true
+align_call_args = true
 extensions = [".st", ".exp"]
 exclude = ["**/build/**"]
 ```
@@ -92,6 +99,8 @@ See [examples/.stformat.toml](examples/.stformat.toml) for a copy-pasteable star
 | `tab_width` | `4` | Width used when normalizing existing tabs |
 | `indent` | `true` | Run the reindentation pass |
 | `align` | `true` | Run the `:=`/`=>`/comment alignment pass |
+| `align_conditions` | `true` | Run the `IF`/`ELSIF`/`WHILE`/`UNTIL` condition alignment pass |
+| `align_call_args` | `true` | Run the call-argument-list alignment pass |
 | `extensions` | `[".st", ".exp"]` | Extensions treated as ST source when scanning a directory |
 | `exclude` | `[]` | Glob patterns (matched against POSIX-style relative paths) to skip when scanning a directory |
 
@@ -137,6 +146,8 @@ src/st_formatter/
                     metadata format normally with zero special-casing
   blocks.py      — block-nesting walker (openers/closers, indent levels)
   indent.py      — reindentation pass driven by blocks.py
+  conditions.py  — aligns multi-line IF/ELSIF/WHILE/UNTIL conditions and normalizes their inter-token spacing
+  callargs.py    — aligns multi-line call argument lists to the call's own column/indent
   align.py       — normalizes VAR*/STRUCT declaration `:` spacing, and aligns consecutive :=, =>, and trailing comments in contiguous runs
   validator.py   — the compile-equivalence stand-in described above
   config.py      — .stformat.toml / pyproject.toml discovery, precedence, and merging
