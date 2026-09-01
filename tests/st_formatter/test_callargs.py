@@ -73,6 +73,21 @@ class TestCallArgs(unittest.TestCase):
         self.assertEqual(lines[2], "      x := 1")
         self.assertEqual(lines[3], "    ),")
 
+    def test_call_with_multiline_comment_argument_left_untouched(self):
+        # A comment token that spans multiple lines has no real leading
+        # whitespace of its own on its continuation line -- reindenting
+        # that line (as pure indentation) corrupts the comment's text.
+        text = (
+            "func_pf(\r\n"
+            "  ptr,\r\n"
+            "  lenMax_u32,\r\n"
+            "  buf_p (* comment line one\r\n"
+            "\t\t\t\tcomment line two *)\r\n"
+            "  ) := 1;\r\n"
+        )
+        out = apply(text, indent_size=2)
+        self.assertEqual(out, text)
+
     def test_protected_call_left_untouched(self):
         # A call inside the footer region (after @OBJECT_END) must never be
         # reindented -- the whole footer round-trips byte-exact.

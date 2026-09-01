@@ -65,6 +65,22 @@ def _any_protected(regions: Regions, line_start: int, line_end: int) -> bool:
     return any(regions.is_protected(ln - 1) for ln in range(line_start, line_end + 1))
 
 
+def _has_multiline_comment(sig: list[Token], line_start: int, line_end: int) -> bool:
+    """True if a comment token spanning multiple lines overlaps this range.
+
+    The reindent loops below reset each continuation line's *entire*
+    leading run to a fixed width, assuming that run is pure indentation.
+    When a multi-line comment's tail actually sits at the start of one of
+    those lines, that assumption is wrong and reindenting corrupts the
+    comment. Simplest safe fix: leave the whole call untouched.
+    """
+    return any(
+        t.type == TokenType.COMMENT and t.end_line > t.line
+        and t.line <= line_end and t.end_line >= line_start
+        for t in sig
+    )
+
+
 def _leading_width(raw: str) -> int:
     return len(raw) - len(raw.lstrip(" "))
 
@@ -127,6 +143,9 @@ def apply(text: str, indent_size: int = 2) -> str:
             if c.lparen.line in done_lines:
                 continue
             if _any_protected(regions, c.lparen.line, c.rparen.line):
+                done_lines.add(c.lparen.line)
+                continue
+            if _has_multiline_comment(sig, c.lparen.line, c.rparen.line):
                 done_lines.add(c.lparen.line)
                 continue
             target = c

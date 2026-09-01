@@ -76,6 +76,38 @@ class TestConditions(unittest.TestCase):
         out = apply(text)
         self.assertEqual(out, text)
 
+    def test_structure_member_dots_not_spaced(self):
+        text = (
+            "IF AC1Snsr_s.CAN_s.outp_s.YawRate_Z_axis_s32 < 0 AND\r\n"
+            "   ABS ( AC1Snsr_s.CAN_s.outp_s.YawRate_Z_axis_s32 ) > AC1Snsr_s.prm_s.YawRate_Thld_s32\r\n"
+            "   THEN\r\n"
+        )
+        out = apply(text)
+        lines = out.splitlines()
+        self.assertEqual(lines[0], "IF AC1Snsr_s.CAN_s.outp_s.YawRate_Z_axis_s32 < 0 AND")
+        self.assertEqual(
+            lines[1],
+            "   ABS ( AC1Snsr_s.CAN_s.outp_s.YawRate_Z_axis_s32 ) > AC1Snsr_s.prm_s.YawRate_Thld_s32",
+        )
+
+    def test_condition_with_multiline_comment_left_untouched(self):
+        # A comment used to "comment out" part of a condition can span
+        # multiple lines; the continuation line's leading run (before its
+        # first real token) is then the comment's own tail, not
+        # indentation -- rewriting it as indentation deletes the tail
+        # (including the closing `*)`), so the whole condition must be
+        # left alone instead.
+        text = (
+            "IF (\r\n"
+            "  Hwinfo_s.stCAN3_u16 <> 0 (*  OR\r\n"
+            "\t\t\t\t\tHwinfo_s.stCAN4_u16 <> 0*)\r\n"
+            "  ) AND\r\n"
+            "  flgOk_b\r\n"
+            "  THEN\r\n"
+        )
+        out = apply(text)
+        self.assertEqual(out, text)
+
     def test_comment_bearing_line_left_alone(self):
         text = (
             "IF flgA = TRUE  OR (* keep spacing *)\r\n"

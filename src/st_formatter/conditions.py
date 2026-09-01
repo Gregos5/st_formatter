@@ -66,6 +66,30 @@ def _any_protected(regions: Regions, line_start: int, line_end: int) -> bool:
     return any(regions.is_protected(ln - 1) for ln in range(line_start, line_end + 1))
 
 
+def _has_multiline_comment(cond: list[Token]) -> bool:
+    """True if a comment token in the condition spans multiple lines.
+
+    A later line's leading whitespace is only safe to rewrite as pure
+    indentation when it truly starts a new token; a multi-line comment's
+    tail can sit on that line instead, and blindly replacing everything
+    before the first token would delete that tail (and its closing `*)`),
+    corrupting the file. Simplest safe fix: leave the whole condition
+    untouched whenever this happens.
+    """
+    return any(t.type == TokenType.COMMENT and t.end_line > t.line for t in cond)
+
+
+def _join_tokens(toks: list[Token]) -> str:
+    """Join token texts with a single space, except around `.` (structure
+    member access), which is never surrounded by spaces."""
+    parts: list[str] = []
+    for idx, t in enumerate(toks):
+        if idx > 0 and t.type != TokenType.DOT and toks[idx - 1].type != TokenType.DOT:
+            parts.append(" ")
+        parts.append(t.text)
+    return "".join(parts)
+
+
 def _rewrite_condition(lines: list[str], opener: Token, cond: list[Token], terminator: Token | None) -> None:
     target_col = opener.col + len(opener.text) + 1
 
@@ -81,7 +105,7 @@ def _rewrite_condition(lines: list[str], opener: Token, cond: list[Token], termi
             continue
         raw = lines[line_no - 1]
         prefix = raw[:toks[0].col] if line_no == opener.line else " " * target_col
-        body = " ".join(t.text for t in toks)
+        body = _join_tokens(toks)
         last = toks[-1]
         suffix = raw[last.col + len(last.text):]
         lines[line_no - 1] = prefix + body + suffix
@@ -102,6 +126,8 @@ def apply(text: str) -> str:
         terminator = sig[end] if end < len(sig) else None
         last_line = terminator.line if (terminator is not None and terminator.line == cond[-1].line) else cond[-1].line
         if _any_protected(regions, opener.line, last_line):
+            continue
+        if _has_multiline_comment(cond):
             continue
         _rewrite_condition(lines, opener, cond, terminator)
 
