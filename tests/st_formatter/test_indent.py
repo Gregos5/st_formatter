@@ -9,9 +9,10 @@ def _fmt(text: str, indent_size: int = 2, tab_width: int = 4) -> str:
 
 
 class TestIndent(unittest.TestCase):
-    def test_program_body_and_var_are_flat_vs_indenting(self):
-        # PROGRAM/VAR_INPUT/END_VAR/END_PROGRAM sit flush left (PROGRAM is a
-        # flat wrapper); the VAR_INPUT *members* are indented one level.
+    def test_program_body_indents_var_flat_vs_var_members_indenting(self):
+        # PROGRAM/END_PROGRAM sit flush left, but the body between them (and
+        # the VAR_INPUT *members*) is indented one level. VAR_INPUT/END_VAR
+        # themselves stay flush with the body around them.
         text = (
             "PROGRAM Foo\r\n"
             "VAR_INPUT\r\n"
@@ -23,11 +24,23 @@ class TestIndent(unittest.TestCase):
         out = _fmt(text)
         lines = out.splitlines()
         self.assertEqual(lines[0], "PROGRAM Foo")
-        self.assertEqual(lines[1], "VAR_INPUT")
-        self.assertEqual(lines[2], "  x : BOOL;")
-        self.assertEqual(lines[3], "END_VAR")
-        self.assertEqual(lines[4], "x := TRUE;")
+        self.assertEqual(lines[1], "  VAR_INPUT")
+        self.assertEqual(lines[2], "    x : BOOL;")
+        self.assertEqual(lines[3], "  END_VAR")
+        self.assertEqual(lines[4], "  x := TRUE;")
         self.assertEqual(lines[5], "END_PROGRAM")
+
+    def test_action_body_is_indented(self):
+        text = (
+            "ACTION Foo:\r\n"
+            "x := TRUE;\r\n"
+            "END_ACTION\r\n"
+        )
+        out = _fmt(text)
+        lines = out.splitlines()
+        self.assertEqual(lines[0], "ACTION Foo:")
+        self.assertEqual(lines[1], "  x := TRUE;")
+        self.assertEqual(lines[2], "END_ACTION")
 
     def test_if_then_else_inline_idiom(self):
         text = (
@@ -40,8 +53,30 @@ class TestIndent(unittest.TestCase):
         lines = out.splitlines()
         self.assertEqual(lines[0], "IF cond = TRUE")
         self.assertEqual(lines[1], "  THEN DoThing();")
-        self.assertEqual(lines[2], "  ELSE ;")
+        self.assertEqual(lines[2], "ELSE ;")
         self.assertEqual(lines[3], "END_IF")
+
+    def test_if_else_block_not_indented_relative_to_if(self):
+        # ELSE/ELSIF are part of the IF/END_IF structure and sit at the same
+        # level as IF and END_IF; only the branch bodies indent.
+        text = (
+            "IF stStartRelease_b THEN\r\n"
+            "\t(* Normal operational mode *)\r\n"
+            "\t_RUN();\r\n"
+            "\tELSE\r\n"
+            "\t\t(* Wait for start release *)\r\n"
+            "\t\t_STARTLOCK();\r\n"
+            "END_IF\r\n"
+        )
+        out = _fmt(text)
+        lines = out.splitlines()
+        self.assertEqual(lines[0], "IF stStartRelease_b THEN")
+        self.assertEqual(lines[1], "  (* Normal operational mode *)")
+        self.assertEqual(lines[2], "  _RUN();")
+        self.assertEqual(lines[3], "ELSE")
+        self.assertEqual(lines[4], "  (* Wait for start release *)")
+        self.assertEqual(lines[5], "  _STARTLOCK();")
+        self.assertEqual(lines[6], "END_IF")
 
     def test_if_then_alone_with_indented_body(self):
         text = (

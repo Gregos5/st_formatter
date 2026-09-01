@@ -36,9 +36,16 @@ OPENER_KEYWORDS = set(OPENER_TO_CLOSER)
 CLOSER_KEYWORDS = set(OPENER_TO_CLOSER.values())
 
 # Openers whose own body is NOT indented relative to their header line.
-FLAT_OPENERS = {"PROGRAM", "FUNCTION", "FUNCTION_BLOCK", "ACTION", "TYPE"}
+FLAT_OPENERS = {"FUNCTION_BLOCK", "TYPE"}
 
-MID_KEYWORDS = {"THEN", "ELSE", "ELSIF", "UNTIL"}
+# ELSE/ELSIF are part of the IF/END_IF structure itself, so they sit at the
+# same level as the IF header rather than indenting like body content.
+STRUCTURAL_MID_KEYWORDS = {"ELSE", "ELSIF"}
+# THEN/UNTIL, when written on their own line, act as a continuation of the
+# block header -- their own line indents once, and their body indents once
+# further still.
+CONTINUATION_MID_KEYWORDS = {"THEN", "UNTIL"}
+MID_KEYWORDS = STRUCTURAL_MID_KEYWORDS | CONTINUATION_MID_KEYWORDS
 
 _NON_SIG = (TokenType.WHITESPACE, TokenType.NEWLINE, TokenType.EOF)
 
@@ -108,7 +115,17 @@ class NestingWalker:
             return self.current_level()
 
         in_case = bool(self.stack) and self.stack[-1].kind == "CASE"
-        if kw0 in MID_KEYWORDS or is_case_label_line(sig, in_case):
+
+        if kw0 in STRUCTURAL_MID_KEYWORDS:
+            if self.stack:
+                frame = self.stack[-1]
+                level = frame.header_level
+                frame.content_level = frame.body_level
+            else:
+                level = 0
+            return level
+
+        if kw0 in CONTINUATION_MID_KEYWORDS or is_case_label_line(sig, in_case):
             if self.stack:
                 level = self.stack[-1].body_level
                 self.stack[-1].content_level = self.stack[-1].body_level + 1
