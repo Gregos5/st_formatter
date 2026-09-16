@@ -81,6 +81,12 @@ def main(argv: list = None) -> int:
                          help="Skip the IF/ELSIF/WHILE/UNTIL condition alignment pass")
     parser.add_argument("--no-align-call-args", action="store_true", default=None,
                          help="Skip the call-argument-list alignment pass")
+    parser.add_argument("--action-separator", choices=["space", "tab"], default=None,
+                         help="Normalize the whitespace between ACTION and its name "
+                              "(default: leave it as written)")
+    parser.add_argument("--trim-trailing-blank-lines", action="store_true", default=None,
+                         help="Remove blank lines immediately before END_ACTION/END_PROGRAM/"
+                              "END_FUNCTION/END_FUNCTION_BLOCK")
     parser.add_argument("--report", metavar="PATH", help="Write the full summary/diff/failure log to this file")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("--version", action="version", version=f"st-formatter {__version__}")
@@ -98,6 +104,8 @@ def main(argv: list = None) -> int:
                 "do_align_conditions": None if args.no_align_conditions is None else not args.no_align_conditions,
                 "do_align_call_args": None if args.no_align_call_args is None else not args.no_align_call_args,
                 "extensions": tuple(e.strip() for e in args.extensions.split(",")) if args.extensions else None,
+                "action_separator": args.action_separator,
+                "trim_trailing_blank_lines": args.trim_trailing_blank_lines,
             },
         )
     except (FileNotFoundError, OSError, ValueError) as exc:
@@ -129,6 +137,8 @@ def main(argv: list = None) -> int:
             do_align=config.do_align,
             do_align_conditions=config.do_align_conditions,
             do_align_call_args=config.do_align_call_args,
+            action_separator=config.action_separator,
+            trim_trailing_blank_lines=config.trim_trailing_blank_lines,
         )
 
         if not result.ok:

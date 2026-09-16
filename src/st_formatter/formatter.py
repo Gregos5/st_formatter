@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from . import align, callargs, conditions, indent, validator
+from . import align, blanklines, callargs, conditions, headers, indent, validator
 from .regions import FileClass, detect
 
 
@@ -24,6 +24,8 @@ def format_text(
     do_align: bool = True,
     do_align_conditions: bool = True,
     do_align_call_args: bool = True,
+    action_separator: str = None,
+    trim_trailing_blank_lines: bool = False,
 ) -> FormatResult:
     regions = detect(original_text)
     if regions.file_class == FileClass.LIBRARY_MANIFEST:
@@ -38,6 +40,13 @@ def format_text(
         text = callargs.apply(text, indent_size=indent_size)
     if do_align:
         text = align.apply(text)
+    # Bodas-enforced passes run last: indent.py collapses tabs out of
+    # non-leading whitespace tokens, so an ACTION-separator tab inserted
+    # any earlier would just get flattened back to a space.
+    if action_separator:
+        text = headers.apply(text, separator=action_separator)
+    if trim_trailing_blank_lines:
+        text = blanklines.apply(text)
 
     result = validator.check(original_text, text)
     if not result.ok:

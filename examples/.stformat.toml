@@ -13,3 +13,11 @@ indent = true
 align = true
 extensions = [".st", ".exp"]
 exclude = ["**/build/**", "**/_generated/**"]
+
+# Bodas-design-specific normalization, both off by default:
+# action_separator: "space" or "tab" normalizes the whitespace between
+#   ACTION and its name; leave unset to keep it exactly as written.
+# trim_trailing_blank_lines: drop blank lines right before
+#   END_ACTION/END_PROGRAM/END_FUNCTION/END_FUNCTION_BLOCK.
+# action_separator = "tab"
+# trim_trailing_blank_lines = true

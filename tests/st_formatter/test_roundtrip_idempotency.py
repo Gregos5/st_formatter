@@ -77,6 +77,21 @@ class TestRoundtripIdempotency(unittest.TestCase):
                 )
                 self.assertFalse(second.changed)
 
+    def test_action_separator_and_trim_survive_the_full_pipeline(self):
+        # Guards against indent.py's tab-to-space normalization (it flattens
+        # tabs out of any non-leading whitespace token) clobbering a tab
+        # inserted by the action_separator pass -- these two options must
+        # take effect after indent.py runs, not before.
+        text = FIXTURES["program_if_case"]
+        first = format_text(text, action_separator="tab", trim_trailing_blank_lines=True)
+        self.assertTrue(first.ok, first.failures)
+        self.assertIn("ACTION\tBar:", first.formatted_text)
+
+        second = format_text(first.formatted_text, action_separator="tab", trim_trailing_blank_lines=True)
+        self.assertTrue(second.ok, second.failures)
+        self.assertEqual(second.formatted_text, first.formatted_text)
+        self.assertFalse(second.changed)
+
     def test_library_manifest_is_untouched(self):
         text = FIXTURES["library_manifest"]
         result = format_text(text)

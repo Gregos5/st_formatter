@@ -76,6 +76,8 @@ align_conditions = true
 align_call_args = true
 extensions = [".st", ".exp"]
 exclude = ["**/build/**", "**/_generated/**"]
+# action_separator = "tab"
+# trim_trailing_blank_lines = true
 ```
 
 Or inside your project's own `pyproject.toml`:
@@ -103,6 +105,8 @@ See [examples/.stformat.toml](examples/.stformat.toml) for a copy-pasteable star
 | `align_call_args` | `true` | Run the call-argument-list alignment pass |
 | `extensions` | `[".st", ".exp"]` | Extensions treated as ST source when scanning a directory |
 | `exclude` | `[]` | Glob patterns (matched against POSIX-style relative paths) to skip when scanning a directory |
+| `action_separator` | unset | `"space"` or `"tab"`: normalize the whitespace between `ACTION` and its name. Unset leaves it as written |
+| `trim_trailing_blank_lines` | `false` | Remove blank lines immediately before `END_ACTION`/`END_PROGRAM`/`END_FUNCTION`/`END_FUNCTION_BLOCK` |
 
 Extension filtering only applies when you point `st-formatter` at a
 **directory**; a file passed explicitly by path is always processed

@@ -109,6 +109,50 @@ class TestConfigDiscovery(unittest.TestCase):
             self.assertEqual(config.indent_size, 4)
             self.assertEqual(config.tab_width, Config().tab_width)
 
+    def test_action_separator_defaults_to_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "a.st"
+            target.write_text("PROGRAM Foo\nEND_PROGRAM\n")
+            config = resolve_config(paths=[str(target)])
+            self.assertIsNone(config.action_separator)
+
+    def test_action_separator_from_config_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".stformat.toml").write_text('action_separator = "tab"\n')
+            target = root / "a.st"
+            target.write_text("PROGRAM Foo\nEND_PROGRAM\n")
+
+            config = resolve_config(paths=[str(target)])
+            self.assertEqual(config.action_separator, "tab")
+
+    def test_invalid_action_separator_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".stformat.toml").write_text('action_separator = "newline"\n')
+            target = root / "a.st"
+            target.write_text("PROGRAM Foo\nEND_PROGRAM\n")
+
+            with self.assertRaises(ValueError):
+                resolve_config(paths=[str(target)])
+
+    def test_trim_trailing_blank_lines_defaults_to_false(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "a.st"
+            target.write_text("PROGRAM Foo\nEND_PROGRAM\n")
+            config = resolve_config(paths=[str(target)])
+            self.assertFalse(config.trim_trailing_blank_lines)
+
+    def test_trim_trailing_blank_lines_from_config_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".stformat.toml").write_text("trim_trailing_blank_lines = true\n")
+            target = root / "a.st"
+            target.write_text("PROGRAM Foo\nEND_PROGRAM\n")
+
+            config = resolve_config(paths=[str(target)])
+            self.assertTrue(config.trim_trailing_blank_lines)
+
 
 if __name__ == "__main__":
     unittest.main()

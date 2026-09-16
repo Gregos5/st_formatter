@@ -18,7 +18,9 @@ _PYPROJECT_FILENAME = "pyproject.toml"
 _KNOWN_KEYS = {
     "indent_size", "tab_width", "indent", "align",
     "align_conditions", "align_call_args", "extensions", "exclude",
+    "action_separator", "trim_trailing_blank_lines",
 }
+_ACTION_SEPARATORS = (None, "space", "tab")
 
 
 @dataclass
@@ -31,6 +33,12 @@ class Config:
     do_align_call_args: bool = True
     extensions: tuple = (".st", ".exp")
     exclude: tuple = field(default_factory=tuple)
+    # None (default): leave the ACTION/name separator exactly as written.
+    # "space" or "tab": normalize it to exactly one space or one tab.
+    action_separator: str = None
+    # Trim blank lines immediately before END_ACTION/END_PROGRAM/
+    # END_FUNCTION/END_FUNCTION_BLOCK. Off by default.
+    trim_trailing_blank_lines: bool = False
 
 
 def _normalize_extensions(values) -> tuple:
@@ -59,6 +67,13 @@ def _table_to_overrides(table: dict) -> dict:
         overrides["extensions"] = _normalize_extensions(table["extensions"])
     if "exclude" in table:
         overrides["exclude"] = tuple(table["exclude"])
+    if "action_separator" in table:
+        value = table["action_separator"]
+        if value not in _ACTION_SEPARATORS:
+            raise ValueError(f"action_separator must be 'space' or 'tab', got {value!r}")
+        overrides["action_separator"] = value
+    if "trim_trailing_blank_lines" in table:
+        overrides["trim_trailing_blank_lines"] = bool(table["trim_trailing_blank_lines"])
     return overrides
 
 
