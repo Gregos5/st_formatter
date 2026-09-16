@@ -42,6 +42,33 @@ class TestAlign(unittest.TestCase):
         self.assertIn(":=", lines[1])
         self.assertIn("=>", lines[2])
 
+    def test_call_opener_line_named_arg_aligned_with_continuation_lines(self):
+        # The opener line has its own outer `:=` (Result := ...) *and* a
+        # call-argument `:=` (Data_au8 := ...). The alignment run must key
+        # off the argument-level assign, joining it with the continuation
+        # lines' argument assigns despite the opener line's shallower
+        # leading width.
+        text = (
+            "Result := Foo(Data_au8     := 1,\r\n"
+            "              CanMsgId_u32 := 2,\r\n"
+            "              MsgCntr_u8   := 3);\r\n"
+        )
+        out = apply(text)
+        lines = out.splitlines()
+        col = lines[1].index(":=", lines[1].index("CanMsgId_u32"))
+        self.assertEqual(lines[0].index(":=", lines[0].index("Data_au8")), col)
+        self.assertEqual(lines[2].index(":=", lines[2].index("MsgCntr_u8")), col)
+
+    def test_call_opener_line_trailing_comment_aligned_with_continuation_lines(self):
+        text = (
+            "Foo(a, (* first *)\r\n"
+            "    bb, (* second *)\r\n"
+            ");\r\n"
+        )
+        out = apply(text)
+        lines = out.splitlines()
+        self.assertEqual(lines[0].index("(*"), lines[1].index("(*"))
+
     def test_trailing_comment_run_aligned(self):
         text = "a := 1; (* one *)\r\nbb := 2; (* two *)\r\n"
         out = apply(text)

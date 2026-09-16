@@ -20,7 +20,7 @@ _NON_SIG = (TokenType.WHITESPACE, TokenType.NEWLINE, TokenType.EOF)
 # ACTION/TYPE/FUNCTION headers) is left exactly as written.
 _DECL_COLON_CONTEXTS = {"VAR", "VAR_INPUT", "VAR_OUTPUT", "VAR_IN_OUT", "VAR_GLOBAL", "STRUCT"}
 
-LineInfo = tuple[int, list[Token], int, bool]  # (line_no, sig_tokens, leading_width, protected)
+LineInfo = tuple[int, list[Token], int, bool, int]  # (line_no, sig_tokens, leading_width, protected, depth_before)
 
 
 def _group_lines(tokens: list[Token]) -> dict[int, list[Token]]:
@@ -37,34 +37,56 @@ def _build_lines_info(text: str) -> tuple[list[str], list[LineInfo], Regions]:
     lines = text.splitlines(keepends=True)
 
     info: list[LineInfo] = []
+    depth = 0
     for line_no in range(1, len(lines) + 1):
         line_toks = by_line.get(line_no, [])
         sig = [t for t in line_toks if t.type not in _NON_SIG]
         width = len(line_toks[0].text) if line_toks and line_toks[0].type == TokenType.WHITESPACE else 0
         protected = regions.is_protected(line_no - 1)
-        info.append((line_no, sig, width, protected))
+        depth_before = depth
+        for t in sig:
+            if t.type == TokenType.LPAREN:
+                depth += 1
+            elif t.type == TokenType.RPAREN:
+                depth -= 1
+        info.append((line_no, sig, width, protected, depth_before))
     return lines, info, regions
 
 
-def _get_assign_op(sig: list[Token]) -> Token | None:
+def _deepest_op(sig: list[Token], depth_before: int, wanted: TokenType) -> Token | None:
+    """Pick the `:=`/`=>` token that sits at the deepest paren nesting on
+    the line -- e.g. on `Result := Foo(Arg := 1)` this returns the inner
+    `Arg :=`, the one relevant to call-argument alignment, not the outer
+    statement assign.
+    """
+    depth = depth_before
+    best: Token | None = None
+    best_depth = -1
+    for t in sig:
+        if t.type == TokenType.LPAREN:
+            depth += 1
+        elif t.type == TokenType.RPAREN:
+            depth -= 1
+        elif t.type in (TokenType.ASSIGN, TokenType.ARROW) and t.type == wanted:
+            if depth >= best_depth:
+                best = t
+                best_depth = depth
+    return best
+
+
+def _get_assign_op(sig: list[Token], depth_before: int = 0) -> Token | None:
     if not sig or (len(sig) == 1 and sig[0].type == TokenType.COMMENT):
         return None
-    for t in sig:
-        if t.type in (TokenType.ASSIGN, TokenType.ARROW):
-            return t if t.type == TokenType.ASSIGN else None
-    return None
+    return _deepest_op(sig, depth_before, TokenType.ASSIGN)
 
 
-def _get_arrow_op(sig: list[Token]) -> Token | None:
+def _get_arrow_op(sig: list[Token], depth_before: int = 0) -> Token | None:
     if not sig or (len(sig) == 1 and sig[0].type == TokenType.COMMENT):
         return None
-    for t in sig:
-        if t.type in (TokenType.ASSIGN, TokenType.ARROW):
-            return t if t.type == TokenType.ARROW else None
-    return None
+    return _deepest_op(sig, depth_before, TokenType.ARROW)
 
 
-def _get_trailing_comment_op(sig: list[Token]) -> Token | None:
+def _get_trailing_comment_op(sig: list[Token], depth_before: int = 0) -> Token | None:
     if len(sig) < 2 or sig[-1].type != TokenType.COMMENT:
         return None
     return sig[-1]
@@ -127,8 +149,8 @@ def _run_align(lines: list[str], lines_info: list[LineInfo], get_op) -> None:
     i = 0
     n = len(lines_info)
     while i < n:
-        line_no, sig, width, protected = lines_info[i]
-        op = None if protected else get_op(sig)
+        line_no, sig, width, protected, depth_before = lines_info[i]
+        op = None if protected else get_op(sig, depth_before)
         if op is None:
             i += 1
             continue
@@ -136,23 +158,29 @@ def _run_align(lines: list[str], lines_info: list[LineInfo], get_op) -> None:
         run = [i]
         j = i + 1
         while j < n:
-            _, sig2, width2, prot2 = lines_info[j]
-            if prot2 or width2 != width or get_op(sig2) is None:
+            _, sig2, width2, prot2, depth2 = lines_info[j]
+            # A line reached while still inside an open call (depth2 > 0)
+            # continues the run regardless of leading width -- the call's
+            # own opener line naturally sits at a shallower indent than
+            # its continuation-argument lines.
+            if prot2 or get_op(sig2, depth2) is None:
+                break
+            if depth2 == 0 and width2 != width:
                 break
             run.append(j)
             j += 1
 
         target = 0
         for k in run:
-            sig_k = lines_info[k][1]
-            op_k = get_op(sig_k)
+            sig_k, depth_k = lines_info[k][1], lines_info[k][4]
+            op_k = get_op(sig_k, depth_k)
             idx = sig_k.index(op_k)
             before_end = (sig_k[idx - 1].col + len(sig_k[idx - 1].text)) if idx > 0 else 0
             target = max(target, before_end + 1)
 
         for k in run:
-            line_no_k, sig_k, _, _ = lines_info[k]
-            op_k = get_op(sig_k)
+            line_no_k, sig_k, _, _, depth_k = lines_info[k]
+            op_k = get_op(sig_k, depth_k)
             idx = sig_k.index(op_k)
             before_end = (sig_k[idx - 1].col + len(sig_k[idx - 1].text)) if idx > 0 else 0
             pad = max(1, target - before_end)

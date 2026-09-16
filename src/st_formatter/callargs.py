@@ -128,7 +128,37 @@ def _apply_case_same_line(lines: list[str], lparen: Token, rparen: Token) -> Non
     lines[closer_line - 1] = raw_close[:m] + raw_close[new_rparen_col:]
 
 
+def _strip_ident_paren_gaps(text: str) -> str:
+    """Collapse a space/tab gap between a call's identifier and its `(` --
+    e.g. `Foo (a, b)` -> `Foo(a, b)`. Runs once up front so `_find_calls`
+    (which requires the two adjacent) can recognize every call regardless
+    of how it was originally spaced.
+    """
+    while True:
+        regions = detect(text)
+        sig = [t for t in tokenize(text) if t.type not in _NON_SIG]
+        lines = text.splitlines(keepends=True)
+        for i, t in enumerate(sig):
+            if t.type != TokenType.LPAREN or i == 0:
+                continue
+            prev = sig[i - 1]
+            if prev.type != TokenType.IDENT or prev.line != t.line:
+                continue
+            prev_end = prev.col + len(prev.text)
+            if prev_end == t.col:
+                continue
+            if regions.is_protected(t.line - 1):
+                continue
+            raw = lines[t.line - 1]
+            lines[t.line - 1] = raw[:prev_end] + raw[t.col:]
+            text = "".join(lines)
+            break
+        else:
+            return text
+
+
 def apply(text: str, indent_size: int = 2) -> str:
+    text = _strip_ident_paren_gaps(text)
     done_lines: set[int] = set()
 
     while True:

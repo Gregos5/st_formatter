@@ -52,6 +52,20 @@ class TestCallArgs(unittest.TestCase):
         out = apply(text)
         self.assertEqual(out, text)
 
+    def test_space_between_ident_and_open_paren_collapsed(self):
+        text = (
+            "Foo (a,\r\n"
+            "     b);\r\n"
+        )
+        out = apply(text)
+        lines = out.splitlines()
+        self.assertEqual(lines[0], "Foo(a,")
+
+    def test_space_before_open_paren_on_single_line_call_collapsed(self):
+        text = "Foo (a, b, c);\r\n"
+        out = apply(text)
+        self.assertEqual(out, "Foo(a, b, c);\r\n")
+
     def test_empty_call_untouched(self):
         text = "Foo(\r\n);\r\n"
         out = apply(text)
